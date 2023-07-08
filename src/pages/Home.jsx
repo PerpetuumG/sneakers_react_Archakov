@@ -7,7 +7,24 @@ export const Home = ({
   setSearchValue,
   onChangeSearchInput,
   onAddToFavorite,
+  isLoading,
 }) => {
+  const renderItems = () => {
+    const filteredItems = items.filter(item =>
+      item.title.toLowerCase().includes(searchValue.toLowerCase()),
+    );
+
+    return (isLoading ? [...Array(8)] : filteredItems).map((item, index) => (
+      <Card
+        key={index}
+        onFavorite={obj => onAddToFavorite(obj)}
+        onPlus={obj => onAddToCart(obj)}
+        loading={isLoading}
+        {...item}
+      />
+    ));
+  };
+
   return (
     <div className="content p-40">
       <div className="d-flex align-center justify-between mb-40">
@@ -25,18 +42,7 @@ export const Home = ({
           <input placeholder="Поиск..." onChange={onChangeSearchInput} value={searchValue} />
         </div>
       </div>
-      <div className="d-flex flex-wrap">
-        {items
-          .filter(item => item.title.toLowerCase().includes(searchValue.toLowerCase()))
-          .map(item => (
-            <Card
-              key={item.id}
-              onFavorite={obj => onAddToFavorite(obj)}
-              onPlus={obj => onAddToCart(obj)}
-              {...item}
-            />
-          ))}
-      </div>
+      <div className="d-flex flex-wrap">{renderItems()}</div>
     </div>
   );
 };

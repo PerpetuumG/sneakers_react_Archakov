@@ -1,18 +1,58 @@
+import axios from 'axios';
 import styles from './Drawer.module.scss';
+import { Info } from '../Info/Info';
+import { useState } from 'react';
+import { useCart } from '../../hooks/useCart';
 
-export const Drawer = ({ onClose, items = [], onRemove }) => {
+const delay = ms =>
+  new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+
+export const Drawer = ({ onClose, items = [], onRemove, opened }) => {
+  const { cartItems, setCartItems, totalPrice } = useCart();
+  const [orderId, setOrderId] = useState(null);
+  const [isOrderComplete, setIsOrderComplete] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const onClickOrder = async () => {
+    try {
+      setIsLoading(true);
+      // Необходимо доплатить за сервер
+      /*
+       const {data} = await axios.post('https://64a4604ac3b509573b5773fe.mockapi.io/orders', {
+       items: cartItems
+       });
+       */
+      // setOrderId(data.id);
+      setIsOrderComplete(true);
+      setCartItems([]);
+
+      // Удаление всех элементов корзины
+      // Костыль
+      for (let i = 0; i < cartItems.length; i++) {
+        const item = cartItems[i];
+        await axios.delete('https://64a4604ac3b509573b5773fe.mockapi.io/cart/' + item.id);
+        await delay(1000);
+      }
+    } catch (error) {
+      alert('Ошибка при создании заказа :(');
+    }
+    setIsLoading(false);
+  };
+
   return (
-    <div className={styles.overlay}>
+    <div className={`${styles.overlay} ${opened ? styles.overlayVisible : ''}`}>
       <div className={styles.drawer}>
         <h2 className="d-flex justify-between mb-30">
           Корзина <img className="cu-p" src="/img/btn-remove.svg" alt="Close" onClick={onClose} />
         </h2>
 
         {items.length > 0 ? (
-          <div>
-            <div className={'items'}>
+          <div className={'d-flex flex-column flex'}>
+            <div className={'items flex'}>
               {items.map(obj => (
-                <div className="cartItem d-flex align-center mb-20">
+                <div className="cartItem d-flex align-center mb-20" key={obj.id}>
                   <div
                     style={{ backgroundImage: `url(${obj.imageUrl})` }}
                     className="cartItemImg"
@@ -37,34 +77,29 @@ export const Drawer = ({ onClose, items = [], onRemove }) => {
                 <li>
                   <span>Итого:</span>
                   <div></div>
-                  <b>$21 498</b>
+                  <b>${totalPrice}</b>
                 </li>
                 <li>
                   <span>Налог 5%:</span>
                   <div></div>
-                  <b>$1074</b>
+                  <b>${((totalPrice / 100) * 5).toFixed(2)}</b>
                 </li>
               </ul>
-              <button className={'greenButton'}>
+              <button className={'greenButton'} onClick={onClickOrder} disabled={isLoading}>
                 Оформить заказ <img src="/img/arrow.svg" alt="Arrow" />
               </button>
             </div>
           </div>
         ) : (
-          <div className={'cartEmpty d-flex align-center justify-center flex-column flex'}>
-            <img
-              className={'mb-20'}
-              width={'120px'}
-              height={'120px'}
-              src="/img/empty-cart.jpg"
-              alt="Empty"
-            />
-            <h2>Корзина пустая</h2>
-            <p className={'opacity-6'}>Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ</p>
-            <button className={'greenButton'} onClick={onClose}>
-              <img src="/img/arrow.svg" alt="Arrow" /> Вернуться назад
-            </button>
-          </div>
+          <Info
+            title={isOrderComplete ? 'Заказ оформлен!' : 'Корзина пустая'}
+            image={isOrderComplete ? '/img/complete-order.jpg' : '/img/empty-cart.jpg'}
+            description={
+              isOrderComplete
+                ? `Ваш заказ #${orderId} скоро будет передан курьерской доставке`
+                : 'Добавьте хотя бы одну пару кроссовок, чтобы сделать заказ'
+            }
+          />
         )}
       </div>
     </div>
